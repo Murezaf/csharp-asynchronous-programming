@@ -143,4 +143,13 @@ public class DomeTrainTask
             ExceptionDispatchInfo.Throw(_exception);
         }
     }
+
+    public static DomeTrainTask Delay(TimeSpan delay)
+    {
+        DomeTrainTask task = new DomeTrainTask();
+
+        new Timer(_ => task.SetResult()).Change(delay, Timeout.InfiniteTimeSpan);
+
+        return task;
+    }
 }
