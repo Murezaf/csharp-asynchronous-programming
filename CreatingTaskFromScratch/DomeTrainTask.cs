@@ -1,4 +1,6 @@
-﻿namespace CreatingTaskFromScratch;
+﻿using System.Runtime.ExceptionServices;
+
+namespace CreatingTaskFromScratch;
 
 public class DomeTrainTask
 {
@@ -117,5 +119,28 @@ public class DomeTrainTask
         }
 
         return task;
+    }
+
+    public void Wait()
+    {
+        ManualResetEventSlim resetEventSlim = null;
+
+        lock (_lock)
+        {
+            if (!_isComplete)
+            {
+                resetEventSlim = new ManualResetEventSlim();
+                ContinueWith(() => resetEventSlim.Set());
+
+                //resetEventSlim.Wait(); //Deadlock
+            }
+        }
+
+        resetEventSlim?.Wait();
+
+        if (_exception is not null)
+        {
+            ExceptionDispatchInfo.Throw(_exception);
+        }
     }
 }
