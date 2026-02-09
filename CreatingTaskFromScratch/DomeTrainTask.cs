@@ -1,4 +1,6 @@
-﻿using System.Runtime.ExceptionServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace CreatingTaskFromScratch;
 
@@ -152,4 +154,30 @@ public class DomeTrainTask
 
         return task;
     }
+
+    public DomeTrainTaskAwaiter GetAwaiter() => new DomeTrainTaskAwaiter(this);
 }
+
+public readonly struct DomeTrainTaskAwaiter : INotifyCompletion
+{
+    private readonly DomeTrainTask _task;
+
+    internal DomeTrainTaskAwaiter(DomeTrainTask task)
+    {
+        _task = task;
+    }
+
+    public void OnCompleted(Action continuation)
+    {
+        _task.ContinueWith(continuation);
+    }
+
+    public bool IsCompleted => _task.IsComplete;
+    //public DomeTrainTaskAwaiter GetAwaiter()
+    //{
+    //    return this;
+    //}
+    public DomeTrainTaskAwaiter GetAwaiter() => this;
+    public void GetResult() => _task.Wait();
+}
+
