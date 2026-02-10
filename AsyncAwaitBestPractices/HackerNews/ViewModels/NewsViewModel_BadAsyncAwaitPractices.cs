@@ -62,17 +62,22 @@ partial class NewsViewModel_BadAsyncAwaitPractices : BaseViewModel
         {
             // ToDo Refactor
             //var topStoriesList = await GetTopStories(token, StoriesConstants.NumberOfStories);
-            var topStoriesList = await GetTopStories(token, StoriesConstants.NumberOfStories).ConfigureAwait(false);
-            
-			//await task.ConfigureAwait(ForceYielding | SuppressThrowing);
+            //var topStoriesList = await GetTopStories(token, StoriesConstants.NumberOfStories).ConfigureAwait(false);
 
             TopStoryCollection.Clear();
-
-			foreach (var story in topStoriesList)
+            await foreach (var story in GetTopStories(token, StoriesConstants.NumberOfStories).ConfigureAwait(false))
 			{
-				if (!TopStoryCollection.Any(x => x.Title.Equals(story.Title, StringComparison.Ordinal)))
-					InsertIntoSortedCollection(TopStoryCollection, (a, b) => b.Score.CompareTo(a.Score), story);
-			}
+                if (!TopStoryCollection.Any(x => x.Title.Equals(story.Title, StringComparison.Ordinal)))
+                    InsertIntoSortedCollection(TopStoryCollection, (a, b) => b.Score.CompareTo(a.Score), story);
+            }
+
+
+			//TopStoryCollection.Clear();
+			//foreach (var story in topStoriesList)
+			//{
+			//	if (!TopStoryCollection.Any(x => x.Title.Equals(story.Title, StringComparison.Ordinal)))
+			//		InsertIntoSortedCollection(TopStoryCollection, (a, b) => b.Score.CompareTo(a.Score), story);
+			//}
 		}
 		catch (Exception e)
 		{
@@ -88,23 +93,42 @@ partial class NewsViewModel_BadAsyncAwaitPractices : BaseViewModel
 		}
 	}
 
-	// ToDo Refactor
-	async Task<FrozenSet<StoryModel>> GetTopStories(CancellationToken token, int storyCount = int.MaxValue)
-	{
-		List<StoryModel> topStoryList = [];
+    // ToDo Refactor
+    //async Task<FrozenSet<StoryModel>> GetTopStories(CancellationToken token, int storyCount = int.MaxValue)
+    async IAsyncEnumerable<StoryModel> GetTopStories([IEnumeratorCancellation] CancellationToken token, int storyCount = int.MaxValue)
 
+    {
 		var topStoryIds = await GetTopStoryIDs(token).ConfigureAwait(false);
 
-		foreach (var topStoryId in topStoryIds)
+		//foreach (var topStoryId in topStoryIds)
+		//{
+		//	var story = await GetStory(topStoryId, token).ConfigureAwait(false);
+		//	topStoryList.Add(story);
+
+		//	if (topStoryList.Count >= storyCount)
+		//		break;
+		//}
+
+		//return topStoryList.OrderByDescending(x => x.Score).ToFrozenSet();
+
+		List<Task<StoryModel>> getTopStoriesTasks = topStoryIds.Select(id => GetStory(id, token)).ToList();
+		
+		//var topStories = await Task.WhenAll(getTopStoriesTasks).ConfigureAwait(false);
+		//return topStories.ToFrozenSet();
+	
+		await foreach(var topStoryTask in Task.WhenEach(getTopStoriesTasks).WithCancellation(token))
 		{
-			var story = await GetStory(topStoryId, token).ConfigureAwait(false);
-			topStoryList.Add(story);
-
-			if (topStoryList.Count >= storyCount)
+			if (storyCount == 0)
 				break;
-		}
 
-		return topStoryList.OrderByDescending(x => x.Score).ToFrozenSet();
+			//yield return topStoryTask.Result; //Task is complete fro sure because of WhenEach so we can use .Result but still we avoid that because of refactoring and code changings in future. 
+
+			var topStory = await topStoryTask.ConfigreAwait(false);
+			yield return topStory;
+
+			storyCount--;
+		}
+	
 	}
 
 	//ToDo Refactor
