@@ -132,20 +132,26 @@ partial class NewsViewModel_BadAsyncAwaitPractices : BaseViewModel
 	}
 
 	//ToDo Refactor
-	async Task<StoryModel> GetStory(long storyId, CancellationToken token)
-	{
-		return await _hackerNewsAPIService.GetStory(storyId, token);
-	}
 
-	//ToDo Refactor
-	async Task<FrozenSet<long>> GetTopStoryIDs(CancellationToken token)
+	//async Task<StoryModel> GetStory(long storyId, CancellationToken token)
+	//{
+	//	return await _hackerNewsAPIService.GetStory(storyId, token).ConfigureAwait(false);
+	//}
+	Task<StoryModel> GetStory(long storyId, CancellationToken token)
+    {
+        return _hackerNewsAPIService.GetStory(storyId, token);
+    }
+
+    //ToDo Refactor
+    //async Task<FrozenSet<long>> GetTopStoryIDs(CancellationToken token)
+    async ValueTask<FrozenSet<long>> GetTopStoryIDs(CancellationToken token)
 	{
 		if (IsDataRecent(TimeSpan.FromHours(1)))
 			return TopStoryCollection.Select(x => x.Id).ToFrozenSet();
 
 		try
 		{
-			return await _hackerNewsAPIService.GetTopStoryIDs(token);
+			return await _hackerNewsAPIService.GetTopStoryIDs(token).ConfigureAwait(false);
 		}
 		catch (Exception e)
 		{
