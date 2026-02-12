@@ -132,9 +132,9 @@ public class DomeTrainTask
             if (!_isComplete)
             {
                 resetEventSlim = new ManualResetEventSlim();
-                ContinueWith(() => resetEventSlim.Set());
+                this.ContinueWith(() => resetEventSlim.Set());
 
-                //resetEventSlim.Wait(); //Deadlock
+                //resetEventSlim.Wait(); //Cause deadlock
             }
         }
 
@@ -180,4 +180,3 @@ public readonly struct DomeTrainTaskAwaiter : INotifyCompletion
     public DomeTrainTaskAwaiter GetAwaiter() => this;
     public void GetResult() => _task.Wait();
 }
-
